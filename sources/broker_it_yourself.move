@@ -8,11 +8,15 @@
         resolve a dispute.
 */
 module overmind::broker_it_yourself {
-    use std::option::Option;
+    use std::option::{Self, Option};
+    use std::vector;
 
-    use aptos_std::simple_map::SimpleMap;
-    use aptos_framework::account::SignerCapability;
-    use aptos_framework::event::EventHandle;
+    use aptos_std::simple_map::{Self, SimpleMap};
+    use aptos_framework::account::{Self, SignerCapability}; 
+    use aptos_framework::event::{Self, EventHandle};
+    use aptos_framework::aptos_coin::AptosCoin;
+    use aptos_framework::coin;
+    use aptos_framework::timestamp;
 
     use overmind::broker_it_yourself_events::{CreateOfferEvent, AcceptOfferEvent, CompleteTransactionEvent, ReleaseFundsEvent, CancelOfferEvent, OpenDisputeEvent, ResolveDisputeEvent};
 
