@@ -414,6 +414,25 @@ module overmind::broker_it_yourself {
         )
     }
 
+    inline fun get_offers_by_sell_apt(creator: address, sell_apt: bool): SimpleMap<u128, Offer> acquires State {
+        let state = borrow_global_mut<State>(@admin);
+        let creator_offers_map = simple_map::create();
+        let creator_offers_vector = simple_map::borrow(&state.creators_offers, &creator);
+        let len = vector::length(creator_offers_vector);
+        let i = 0;
+        while (i < len) {
+            let element = vector::borrow(creator_offers_vector, i);
+            if (simple_map::contains_key(&state.offers, element)) {
+                let offer = simple_map::borrow(&state.offers, element);
+                if (offer.sell_apt == sell_apt) {
+                    simple_map::add(&mut creator_offers_map, *element, *offer);
+                }
+            };
+            i = i + 1;
+        };
+        creator_offers_map
+    }
+
     /*
         Returns the list of all offers
         @returns - list of all offers
@@ -482,22 +501,7 @@ module overmind::broker_it_yourself {
     public fun get_buy_offers(creator: address): SimpleMap<u128, Offer> acquires State {
         assert_state_initialized();
 
-        let state = borrow_global_mut<State>(@admin);
-        let creator_offers_map = simple_map::create();
-        let creator_offers_vector = simple_map::borrow(&state.creators_offers, &creator);
-        let len = vector::length(creator_offers_vector);
-        let i = 0;
-        while (i < len) {
-            let element = vector::borrow(creator_offers_vector, i);
-            if (simple_map::contains_key(&state.offers, element)) {
-                let offer = simple_map::borrow(&state.offers, element);
-                if (offer.sell_apt == false) {
-                    simple_map::add(&mut creator_offers_map, *element, *offer);
-                }
-            };
-            i = i + 1;
-        };
-        creator_offers_map 
+        get_offers_by_sell_apt(creator, false)
     }
 
     /*
@@ -508,22 +512,7 @@ module overmind::broker_it_yourself {
     public fun get_sell_offers(creator: address): SimpleMap<u128, Offer> acquires State {
         assert_state_initialized();
 
-        let state = borrow_global_mut<State>(@admin);
-        let creator_offers_map = simple_map::create();
-        let creator_offers_vector = simple_map::borrow(&state.creators_offers, &creator);
-        let len = vector::length(creator_offers_vector);
-        let i = 0;
-        while (i < len) {
-            let element = vector::borrow(creator_offers_vector, i);
-            if (simple_map::contains_key(&state.offers, element)) {
-                let offer = simple_map::borrow(&state.offers, element);
-                if (offer.sell_apt == true) {
-                    simple_map::add(&mut creator_offers_map, *element, *offer);
-                }
-            };
-            i = i + 1;
-        };
-        creator_offers_map
+        get_offers_by_sell_apt(creator, true)
     }
 
     /*
