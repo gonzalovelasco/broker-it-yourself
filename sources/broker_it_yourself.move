@@ -102,13 +102,26 @@ module overmind::broker_it_yourself {
         @param admin - signer representing the admin
     */
     public entry fun init(admin: &signer) {
-        // TODO: Call assert_signer_is_admin function
+        assert_signer_is_admin(admin);
+        
+        let (res_signer, res_cap) = account::create_resource_account(admin, SEED);
 
-        // TODO: Create a resource account using `SEED` global constant
+        coin::register<AptosCoin>(&res_signer);
 
-        // TODO: Register the resource account with AptosCoin
-
-        // TODO: Move State resource to the admin address
+        let state = State {
+            offers: simple_map::create(),
+            creators_offers: simple_map::create(),
+            offer_id: 0,
+            cap: res_cap,
+            create_offer_events: account::new_event_handle<CreateOfferEvent>(admin),
+            accept_offer_events: account::new_event_handle<AcceptOfferEvent>(admin),
+            complete_transaction_events: account::new_event_handle<CompleteTransactionEvent>(admin),
+            release_funds_events:  account::new_event_handle<ReleaseFundsEvent>(admin),
+            cancel_offer_events:  account::new_event_handle<CancelOfferEvent>(admin),
+            open_dispute_events: account::new_event_handle<OpenDisputeEvent>(admin),
+            resolve_dispute_events: account::new_event_handle<ResolveDisputeEvent>(admin)
+        };
+        move_to(admin, state)
     }
 
     /*
@@ -364,7 +377,7 @@ module overmind::broker_it_yourself {
     /////////////
 
     inline fun assert_signer_is_admin(admin: &signer) {
-        // TODO: Assert that the provided admin is the same as in Move.toml file
+        assert!(signer::address_of(admin) == @admin, ERROR_SIGNER_NOT_ADMIN);
     }
 
     inline fun assert_state_initialized() {
