@@ -378,22 +378,39 @@ module overmind::broker_it_yourself {
         offer_id: u128,
         transfer_to_creator: bool
     ) acquires State {
-        // TODO: Call assert_state_initialized function
 
-        // TODO: Call assert_offer_exists function
+        assert_state_initialized();
 
-        // TODO: Call assert_dispute_opened function
+        let state = borrow_global_mut<State>(@admin);
 
-        // TODO: Call assert_singer_is_arbiter function
+        assert_offer_exists(&state.offers, &offer_id);
 
-        // TODO: Remove the offer from the list of available offers
+        let offer = *simple_map::borrow(&state.offers, &offer_id);
 
-        // TODO: Remove the offer's id from the creator's offers list
+        assert_dispute_opened(&offer);
 
-        // TODO: If transfer_to_creator send funds to creator, else if !transfer_to_creator send funds to counterparty
-        //      if there is a counterparty
+        assert_singer_is_arbiter(arbiter, &offer);
 
-        // TODO: Emit ResolveDisputeEvent event
+        simple_map::remove(&mut state.offers, &offer_id);
+
+        remove_offer_from_creator_offers(&mut state.creators_offers, &offer.creator, &offer_id);
+
+        let admin_signer = account::create_signer_with_capability(&state.cap);
+        if (transfer_to_creator == true) {
+            coin::transfer<AptosCoin>(&admin_signer, offer.creator, offer.apt_amount)
+        } else if(option::is_some(&offer.counterparty)) {
+            let counterparty = *option::borrow(&offer.counterparty);
+            coin::transfer<AptosCoin>(&admin_signer, counterparty, offer.apt_amount);
+        };
+
+        event::emit_event<ResolveDisputeEvent>(
+            &mut state.resolve_dispute_events,
+            overmind::broker_it_yourself_events::new_resolve_dispute_event(
+                offer_id,
+                transfer_to_creator,
+                timestamp::now_seconds()
+            ),
+        )
     }
 
     /*
@@ -538,11 +555,11 @@ module overmind::broker_it_yourself {
     }
 
     inline fun assert_dispute_opened(offer: &Offer) {
-        // TODO: Assert that a dispute is opened
+        assert!(offer.dispute_opened == true, ERROR_DISPUTE_NOT_OPENED);
     }
 
     inline fun assert_singer_is_arbiter(arbiter: &signer, offer: &Offer) {
-        // TODO: Assert that the provided signer is the arbiter of the provided offer
+        assert!(offer.arbiter == signer::address_of(arbiter), ERROR_SIGNER_NOT_ARBITER);
     }
 
     /////////////////////////
