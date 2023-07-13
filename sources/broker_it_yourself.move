@@ -340,17 +340,29 @@ module overmind::broker_it_yourself {
         @param offer_id - id of the offer
     */
     public entry fun open_dispute(user: &signer, offer_id: u128) acquires State {
-        // TODO: Call assert_state_initialized function
 
-        // TODO: Call assert_offer_exists function
+        assert_state_initialized();
 
-        // TODO: Call assert_user_participates_in_transaction function
+        let state = borrow_global_mut<State>(@admin);
 
-        // TODO: Call assert_dispute_not_opened function
+        assert_offer_exists(&state.offers, &offer_id);
 
-        // TODO: Set the Offer's dispute_opened flag to true
+        let offer = simple_map::borrow_mut(&mut state.offers, &offer_id);
 
-        // TODO: Emit OpenDisputeEvent event
+        assert_user_participates_in_transaction(signer::address_of(user), offer);
+
+        assert_dispute_not_opened(offer);
+
+        offer.dispute_opened = true;
+
+        event::emit_event<OpenDisputeEvent>(
+            &mut state.open_dispute_events,
+            overmind::broker_it_yourself_events::new_open_dispute_event(
+                offer_id,
+                signer::address_of(user),
+                timestamp::now_seconds()
+            ),
+        )
     }
 
     /*
