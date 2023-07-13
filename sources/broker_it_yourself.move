@@ -301,23 +301,37 @@ module overmind::broker_it_yourself {
         @param offer_id - id of the offer
     */
     public entry fun cancel_offer(creator: &signer, offer_id: u128) acquires State {
-        // TODO: Call assert_state_initialized function
 
-        // TODO: Call assert_offer_exists function
+        assert_state_initialized();
 
-        // TODO: Remove the offer from the list of available offers
+        let state = borrow_global_mut<State>(@admin);
 
-        // TODO: Call assert_signer_is_creator function
+        assert_offer_exists(&state.offers, &offer_id);
 
-        // TODO: Call assert_offer_not_accepted function
+        let offer = *simple_map::borrow(&state.offers, &offer_id);
 
-        // TODO: Call assert_dispute_not_opened function
+        simple_map::remove(&mut state.offers, &offer_id);
 
-        // TODO: Remove the offer's id from the creator's offers list
+        assert_signer_is_creator(creator, &offer);
 
-        // TODO: Transfer appropriate amount of APT from the PDA to the creator if the Offer's sell_apt == true
+        assert_offer_not_accepted(&offer);
 
-        // TODO: Emit CancelOfferEvent event
+        assert_dispute_not_opened(&offer);
+
+        remove_offer_from_creator_offers(&mut state.creators_offers, &signer::address_of(creator), &offer_id);
+        
+        if (offer.sell_apt == true) {
+            let admin_signer = account::create_signer_with_capability(&state.cap);
+            coin::transfer<AptosCoin>(&admin_signer, signer::address_of(creator), offer.apt_amount)
+        };
+
+        event::emit_event<CancelOfferEvent>(
+            &mut state.cancel_offer_events,
+            overmind::broker_it_yourself_events::new_cancel_offer_event(
+                offer_id,
+                timestamp::now_seconds()
+            ),
+        )
     }
 
     /*
@@ -504,7 +518,7 @@ module overmind::broker_it_yourself {
     }
 
     inline fun assert_signer_is_creator(creator: &signer, offer: &Offer) {
-        // TODO: Assert that the provided creator is the creator of the provided offer
+        assert!(offer.creator == signer::address_of(creator), ERROR_SIGNER_NOT_CREATOR);
     }
 
     inline fun assert_dispute_not_opened(offer: &Offer) {
